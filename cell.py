@@ -30,12 +30,12 @@ class Cell:
 
         # Draw value or sketched value
         if self.value != 0:
-            font = pygame.font.SysFont("comicsansms", 30)
+            font = pygame.font.SysFont("NONE", 30)
             text = font.render(str(self.value), True, (0, 0, 0))
             self.screen.blit(text,
                              (x + cell_size // 2 - text.get_width() // 2, y + cell_size // 2 - text.get_height() // 2))
         elif self.sketched_value != 0:
-            font = pygame.font.SysFont("comicsansms", 15)
+            font = pygame.font.SysFont("NONE", 15)
             text = font.render(str(self.sketched_value), True, (0, 0, 0))
             self.screen.blit(text,
                              (x + cell_size // 2 - text.get_width() // 2, y + cell_size // 2 - text.get_height() // 2))
