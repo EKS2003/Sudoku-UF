@@ -8,9 +8,7 @@ class SudokuGenerator:
         self.board = [[0 for i in range(self.row_length)] for j in range(self.row_length)]
         self.box_length = int(math.sqrt(self.row_length))
     def get_board(self):
-        for i in range(len(self.board)):
-            for j in range(len(self.board[i])):
-                self.board[i][j] = str(self.board[i][j])
+
         return self.board
 
     def print_board(self):
@@ -112,3 +110,8 @@ def generate_sudoku(size,removed):
      sudoku.remove_cells()
      board = sudoku.get_board()
      return board
+
+sudoku = SudokuGenerator(9, 15)
+sudoku.fill_values()
+sudoku.remove_cells()
+sudoku.print_board()
