@@ -1,109 +1,142 @@
-import pygame
+import pygame as pg
 from cell import Cell
-# Board class
+from sudoku_generator import *
+
+WIDTH = 603
+HEIGHT = 603
+
+
 class Board:
     def __init__(self, width, height, screen, difficulty):
         self.width = width
         self.height = height
         self.screen = screen
         self.difficulty = difficulty
-        self.cells = [[Cell() for _ in range(9)] for _ in range(9)]
-        self.selected_cell = None
-#draw board on pygame
+        self.rows = 9
+        self.cols = 9
+        self.board = generate_sudoku(9, difficulty)
+        self.cells = [[Cell(self.board[row][col], row, col, self.screen) for col in range(9)] for row in range(9)]
+        self.unused_cells = []
+
     def draw(self):
-        # Draw grid outline
-        pygame.draw.rect(self.screen, (0, 0, 0), (0, 0, self.width, self.height), 2)
-# Draw bold lines to delineate 3x3 boxes
-        for x in range(0, self.width, self.width // 3):
-            pygame.draw.line(self.screen, (0, 0, 0), (x, 0), (x, self.height), 3)
-        for y in range(0, self.height, self.height // 3):
-            pygame.draw.line(self.screen, (0, 0, 0), (0, y), (self.width, y), 3)
-# Draw each cell
-        for row in range(9):
-            for col in range(9):
-                cell = self.cells[row][col]
-                cell.draw(self.screen, row, col, self.selected_cell)
-#select cell
+        self.screen.fill((254, 240, 255))
+        for i in range(0, 3 + 1):
+            pg.draw.line(
+                self.screen,(0, 13, 51),(0, i * 67 * 3),(WIDTH, i * 67 * 3), 5)
+
+        for i in range(0, 3 + 1):
+            pg.draw.line(self.screen,(0, 13, 51),(i * 67 * 3, 0),(i * 67 * 3, HEIGHT), 5)
+
+        for i in range(0, 9 + 1):
+            pg.draw.line(self.screen,(0, 13, 51),(0, i * 67),(WIDTH, i * 67),1)
+
+        for i in range(1, 9):
+            pg.draw.line(self.screen,(0, 13, 51),(i * 67, 0),(i * 67, WIDTH), 1)
+
+        for list_cells in self.cells:
+            for cell in list_cells:
+                cell.draw()
+
     def select(self, row, col):
-        self.selected_cell = (row, col)
-#user click function
+        for i in range(9):
+            for j in range(9):
+                self.cells[i][j].clicked = False
+        self.cells[row][col].clicked = True
+        self.click(row, col)
+
     def click(self, x, y):
-        if 0 <= x < self.width and 0 <= y < self.height:
-            cell_width = self.width // 9
-            cell_height = self.height // 9
-            row = y // cell_height
-            col = x // cell_width
-            return (row, col)
+        clicked_row = x // 67
+        clicked_col = y // 67
+        if clicked_row in range(9) and clicked_col in range(9):
+            print([clicked_row, clicked_col])
+            return [clicked_row, clicked_col]
         else:
             return None
-#clears ell
+
     def clear(self):
-        if self.selected_cell:
-            row, col = self.selected_cell
-            self.cells[row][col].clear()
-#sketch input value
+        for cell_list in range(9):
+            for cell in range(9):
+                if self.cells[cell_list][cell].clicked:
+                    if self.cells[cell_list][cell].cell_filled == False:
+                        self.cells[cell_list][cell].value = 0
+                        self.cells[cell_list][cell].cell_sketched_value = 0
+
     def sketch(self, value):
-        if self.selected_cell:
-            row, col = self.selected_cell
-            self.cells[row][col].set_sketched_value(value)
-#set value of cell to input value
+
+        for cell_list in self.cells:
+            for cell in cell_list:
+                if cell.clicked:
+                    cell.set_sketched_value(value)
+
     def place_number(self, value):
-        if self.selected_cell:
-            row, col = self.selected_cell
-            self.cells[row][col].set_value(value)
-#resets board
+        self.find_empty()
+
+        for cell_list in range(9):
+            for cell in range(9):
+                if self.cells[cell_list][cell].clicked:
+                    if (cell_list, cell) in self.unused_cells:
+
+                        if self.cells[cell_list][cell].cell_sketched_value == 0:
+                            self.cells[cell_list][cell].set_cell_value(0)
+                        else:
+                            self.cells[cell_list][cell].set_cell_value(value)
+
     def reset_to_original(self):
+
         for row in range(9):
             for col in range(9):
-                self.cells[row][col].reset_to_original()
-#checks of board is full
+                if (row, col) in self.unused_cells:
+                    self.cells[row][col].set_cell_value(0)
+                    self.cells[row][col].set_sketched_value(0)
+                    self.cells[row][col].clicked = False
+
     def is_full(self):
         for row in range(9):
             for col in range(9):
-                if self.cells[row][col].get_value() == 0:
+                if self.cells[row][col].value == 0:
                     return False
         return True
-#updates board code to check
+
     def update_board(self):
+
         for row in range(9):
             for col in range(9):
-                self.cells[row][col].update()
-#check for empty cells
+                self.board[row][col] = self.cells[row][col].value
+
     def find_empty(self):
         for row in range(9):
             for col in range(9):
-                if self.cells[row][col].get_value() == 0:
-                    return (row, col)
-        return None
-#makes sure sudoku is achieved
+                if self.cells[row][col].value == 0:
+                    pos_cell = (row, col)
+                    self.unused_cells.append(pos_cell)
+
+        return self.unused_cells
+
     def check_board(self):
-# Check rows
+
         for row in range(9):
-            values = set()
+            row_list = set()
             for col in range(9):
-                value = self.cells[row][col].get_value()
-                if value != 0:
-                    if value in values:
-                        return False
-                    values.add(value)
-# Check columns
+                num = self.cells[row][col].value
+                if num in row_list:
+                    return False
+                row_list.add(num)
+
         for col in range(9):
-            values = set()
+            col_list = set()
             for row in range(9):
-                value = self.cells[row][col].get_value()
-                if value != 0:
-                    if value in values:
-                        return False
-                    values.add(value)
-# Check 3x3 boxes
-        for box_row in range(3):
-            for box_col in range(3):
-                values = set()
-                for row in range(box_row * 3, (box_row + 1) * 3):
-                    for col in range(box_col * 3, (box_col + 1) * 3):
-                        value = self.cells[row][col].get_value()
-                        if value != 0:
-                            if value in values:
-                                return False
-                            values.add(value)
+                num = self.cells[row][col].value
+                if num in col_list:
+                    return False
+                col_list.add(num)
+
+        for col in range(0, 9, 3):
+            for row in range(0, 9, 3):
+                small_box = set()
+                for i in range(3):
+                    for j in range(3):
+                        num = self.cells[i + col][j + row].value
+                        if num in small_box:
+                            return False
+                        small_box.add(num)
         return True
